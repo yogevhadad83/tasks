@@ -1,4 +1,4 @@
-# Game Demo
+# Tasks
 
 A minimal Vite + TypeScript canvas app that shows a full-screen black screen. Useful as a starting point for rapid iteration.
 
