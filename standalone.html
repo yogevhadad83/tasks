@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Demo - Standalone</title>
+    <style>
+      html, body { height: 100%; margin: 0; background: #000; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <script>
+      // Pure JS canvas that fills the screen with black (no bundler required)
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      document.body.appendChild(canvas);
+      function resize() {
+        const dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
+        canvas.width = Math.floor(w * dpr);
+        canvas.height = Math.floor(h * dpr);
+        if (ctx) {
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          ctx.fillStyle = '#000';
+          ctx.fillRect(0, 0, w, h);
+        }
+      }
+      window.addEventListener('resize', resize);
+      resize();
+    </script>
+  </body>
+  </html>

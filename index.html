@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Game Demo</title>
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <div id="game-container">
+      <h2 id="now-playing-title">
+        <span class="np-text">Now Playing</span>
+        <span id="turnDot" class="dot current-player-dot" title="Current player"></span>
+      </h2>
+      <div class="roll-group">
+        <span id="rollLabel" aria-live="polite" title="Last roll"></span>
+        <button id="tossBtn" type="button">Roll</button>
+      </div>
+    </div>
+    <div id="control-panel" role="region" aria-label="Game controls">
+      <div class="row">
+      </div>
+      <div class="row balances-row" id="balances" aria-label="Player balances"></div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div id="setup-modal" class="modal-backdrop" aria-labelledby="setup-title" role="dialog" aria-modal="true">
+      <div class="modal">
+        <h2 id="setup-title">Game Setup</h2>
+        <form id="setup-form">
+          <div class="field">
+            <label for="playersInput">Number of players</label>
+            <input id="playersInput" name="players" type="number" min="1" max="8" value="2" step="1" required />
+          </div>
+          <div class="field">
+            <label for="boxesInput">Number of boxes</label>
+            <input id="boxesInput" name="boxes" type="number" min="6" max="60" value="20" step="1" required />
+          </div>
+            <div class="field">
+              <label for="tasksInput">Number of tasks (max 25% of boxes)</label>
+              <input id="tasksInput" name="tasks" type="number" min="0" value="5" step="1" required />
+            </div>
+            <div class="field">
+              <label for="targetAmountInput">Target amount to win ($)</label>
+              <input id="targetAmountInput" name="targetAmount" type="number" min="1" value="100" step="1" required />
+            </div>
+          <div class="actions">
+            <button id="startBtn" type="submit">Start Game</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Task Modal (hidden by default) -->
+    <div id="task-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="task-title" style="display:none">
+      <div class="modal">
+        <h2 id="task-title">Task</h2>
+        <div class="field">
+          <label>Pays</label>
+          <div><strong><span id="taskPays">0</span></strong></div>
+        </div>
+        <div class="field">
+          <label>Steps</label>
+          <div><strong><span id="taskSteps">0</span></strong></div>
+        </div>
+        <div class="actions">
+          <button id="taskCloseBtn" type="button">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pay Steps Modal (hidden by default) -->
+    <div id="pay-steps-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pay-steps-title" style="display:none">
+      <div class="modal">
+        <h2 id="pay-steps-title">Use Steps on Task</h2>
+        <div class="field">
+          <label for="payStepsRange">Steps to use: <strong><span id="payStepsValue">1</span></strong></label>
+          <input id="payStepsRange" type="range" min="1" max="1" value="1" step="1" />
+          <div style="opacity:.8; font-size:12px">Pick between 1 and the lower of your roll or the task's remaining steps.</div>
+        </div>
+        <div class="actions">
+          <button id="payStepsCancel" type="button">Cancel</button>
+          <button id="payStepsApply" type="button">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Steps Modal (hidden by default) -->
+    <div id="add-steps-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="add-steps-title" style="display:none">
+      <div class="modal">
+        <h2 id="add-steps-title">Add Steps to Task</h2>
+        <div class="field">
+          <label for="addStepsRange">Steps to add: <strong><span id="addStepsValue">1</span></strong></label>
+          <input id="addStepsRange" type="range" min="1" max="1" value="1" step="1" />
+          <div style="opacity:.8; font-size:12px">Pick between 1 and the number you rolled.</div>
+        </div>
+        <div class="actions">
+          <button id="addStepsCancel" type="button">Cancel</button>
+          <button id="addStepsApply" type="button">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
