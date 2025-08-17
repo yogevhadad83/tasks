@@ -370,6 +370,11 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
       if (after) after();
       return;
     }
+    // New fields for modal
+  const payStepsPays = document.getElementById('payStepsPays') as HTMLSpanElement | null;
+  const payStepsToComplete = document.getElementById('payStepsToComplete') as HTMLSpanElement | null;
+  const payStepsWillRemain = document.getElementById('payStepsWillRemain') as HTMLSpanElement | null;
+    const payStepsOwner = document.getElementById('payStepsOwner') as HTMLSpanElement | null;
     const maxSelectable = clamp(Math.min(budgetSteps, info.steps), 1, 12);
     if (maxSelectable <= 0) {
       if (after) after();
@@ -380,9 +385,22 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
     payStepsRange.value = '1';
     payStepsValue.textContent = '1';
     payStepsTileIdx = tileIdx;
+    // Set new modal fields
+  if (payStepsPays) payStepsPays.textContent = String(info.pays);
+  if (payStepsToComplete) payStepsToComplete.textContent = String(Math.max(0, info.steps - 1));
+  if (payStepsWillRemain) payStepsWillRemain.textContent = String(Math.max(0, budgetSteps - 1));
+    if (payStepsOwner) {
+      const color = tokens[owner]?.color || '#888';
+      payStepsOwner.innerHTML = `<span style='display:inline-block;width:16px;height:16px;border-radius:50%;background:${color};vertical-align:middle;margin-right:6px'></span> Player ${owner + 1}`;
+    }
     payStepsModal.style.display = 'grid';
 
-    const onInput = () => { if (payStepsValue && payStepsRange) payStepsValue.textContent = payStepsRange.value; };
+    const onInput = () => {
+      if (payStepsValue && payStepsRange) payStepsValue.textContent = payStepsRange.value;
+      const sel = clamp(parseInt(payStepsRange.value || '1', 10) || 1, 1, maxSelectable);
+      if (payStepsToComplete) payStepsToComplete.textContent = String(Math.max(0, info.steps - sel));
+      if (payStepsWillRemain) payStepsWillRemain.textContent = String(Math.max(0, (budgetSteps) - sel));
+    };
     payStepsRange.addEventListener('input', onInput);
 
     const cleanup = () => {
@@ -392,8 +410,8 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
     };
 
     const onCancel = () => {
-  updateRollLabel();
-  cleanup();
+      updateRollLabel();
+      cleanup();
       if (after) after();
     };
     const onApply = () => {
@@ -413,6 +431,7 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
         }
       }
       remainingSteps = Math.max(0, budgetSteps - useSteps);
+      updateRollLabel();
       cleanup();
       if (after) after();
     };
@@ -433,8 +452,27 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
   addStepsRange.value = '1';
   addStepsValue.textContent = '1';
   addStepsTileIdx = tileIdx;
+   // Set new modal fields
+   const addStepsPays = document.getElementById('addStepsPays') as HTMLSpanElement | null;
+   const addStepsToComplete = document.getElementById('addStepsToComplete') as HTMLSpanElement | null;
+   const addStepsWillRemain = document.getElementById('addStepsWillRemain') as HTMLSpanElement | null;
+   const addStepsOwner = document.getElementById('addStepsOwner') as HTMLSpanElement | null;
+   if (info) {
+     if (addStepsPays) addStepsPays.textContent = String(info.pays);
+     if (addStepsToComplete) addStepsToComplete.textContent = String(info.steps + 1);
+     if (addStepsWillRemain) addStepsWillRemain.textContent = String(Math.max(0, budgetSteps - 1));
+     if (addStepsOwner) {
+       const color = tokens[info.owner]?.color || '#888';
+       addStepsOwner.innerHTML = `<span style='display:inline-block;width:16px;height:16px;border-radius:50%;background:${color};vertical-align:middle;margin-right:6px'></span> Player ${info.owner + 1}`;
+     }
+   }
   addStepsModal.style.display = 'grid';
-  const onInputAdd = () => { if (addStepsValue && addStepsRange) addStepsValue.textContent = addStepsRange.value; };
+  const onInputAdd = () => {
+    if (addStepsValue && addStepsRange) addStepsValue.textContent = addStepsRange.value;
+    const sel = clamp(parseInt(addStepsRange.value || '1', 10) || 1, 1, maxAdd);
+    if (addStepsToComplete && info) addStepsToComplete.textContent = String(Math.max(0, info.steps + sel));
+    if (addStepsWillRemain) addStepsWillRemain.textContent = String(Math.max(0, (budgetSteps) - sel));
+  };
   addStepsRange.addEventListener('input', onInputAdd);
   const cleanupAdd = () => {
     addStepsModal.style.display = 'none';
@@ -449,8 +487,8 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
     const addSteps = clamp(parseInt(addStepsRange.value || '1', 10) || 1, 1, maxAdd);
     const t = taskInfo.get(tileIdx);
     if (t) taskInfo.set(tileIdx, { ...t, steps: clamp(t.steps + addSteps, 0, 999) });
-  remainingSteps = Math.max(0, budgetSteps - addSteps);
-  updateRollLabel();
+    remainingSteps = Math.max(0, budgetSteps - addSteps);
+    updateRollLabel();
     cleanupAdd();
     if (after) after();
   };
@@ -913,8 +951,13 @@ function draw() {
   // Dice in the middle
   const dieSize = Math.min(w, h) * 0.1;
   const gap = dieSize * 0.2;
+  // Fade dice when awaiting a roll (button enabled), normal during the turn
+  const shouldFadeDice = !!(tossBtn && !tossBtn.disabled);
+  const prevAlpha = ctx.globalAlpha;
+  if (shouldFadeDice) ctx.globalAlpha = 0.35;
   drawDie(cx - (dieSize / 2 + gap / 2), cy, dieSize, dice[0]);
   drawDie(cx + (dieSize / 2 + gap / 2), cy, dieSize, dice[1]);
+  ctx.globalAlpha = prevAlpha;
 }
 
 // Handle canvas clicks to move to highlighted tile when applicable

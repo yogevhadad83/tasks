@@ -79,6 +79,14 @@ canvas { display: block; }
 .actions button { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: #2ea043; color: white; cursor: pointer; }
 .actions button:hover { filter: brightness(1.06); }
 
+/* Inline stats row inside modals */
+.inline-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
 /* Pointer when hovering selectable tile */
 .canvas-pointer { cursor: pointer; }
 

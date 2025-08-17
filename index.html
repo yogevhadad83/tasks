@@ -78,6 +78,19 @@
           <input id="payStepsRange" type="range" min="1" max="1" value="1" step="1" />
           <div style="opacity:.8; font-size:12px">Pick between 1 and the lower of your roll or the task's remaining steps.</div>
         </div>
+        <div class="field">
+          <div class="inline-stats">
+            <div> Pays: <strong style="color:#34d399"><span id="payStepsPays">0</span></strong></div>
+            <div> Steps to complete: <strong style="color:#f87171"><span id="payStepsToComplete">0</span></strong></div>
+          </div>
+        </div>
+        <div class="field">
+          <div>steps that will remain: <strong><span id="payStepsWillRemain">0</span></strong></div>
+        </div>
+        <div class="field">
+          <label>Owner</label>
+          <div><strong><span id="payStepsOwner">-</span></strong></div>
+        </div>
         <div class="actions">
           <button id="payStepsCancel" type="button">Cancel</button>
           <button id="payStepsApply" type="button">Apply</button>
@@ -93,6 +106,19 @@
           <label for="addStepsRange">Steps to add: <strong><span id="addStepsValue">1</span></strong></label>
           <input id="addStepsRange" type="range" min="1" max="1" value="1" step="1" />
           <div style="opacity:.8; font-size:12px">Pick between 1 and the number you rolled.</div>
+        </div>
+        <div class="field">
+          <div class="inline-stats">
+            <div> Pays: <strong style="color:#34d399"><span id="addStepsPays">0</span></strong></div>
+            <div> Steps to complete: <strong style="color:#f87171"><span id="addStepsToComplete">0</span></strong></div>
+          </div>
+        </div>
+        <div class="field">
+          <div>steps that will remain: <strong><span id="addStepsWillRemain">0</span></strong></div>
+        </div>
+        <div class="field">
+          <label>Owner</label>
+          <div><strong><span id="addStepsOwner">-</span></strong></div>
         </div>
         <div class="actions">
           <button id="addStepsCancel" type="button">Cancel</button>

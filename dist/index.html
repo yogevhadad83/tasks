@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Game Demo</title>
-    <script type="module" crossorigin src="/assets/index-CsIJjNam.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CWqx-53k.css">
+    <script type="module" crossorigin src="/assets/index-Pe53T4Cr.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Doro_-z8.css">
   </head>
   <body>
     <div id="game-container">
@@ -74,14 +74,23 @@
     <div id="pay-steps-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pay-steps-title" style="display:none">
       <div class="modal">
         <h2 id="pay-steps-title">Use Steps on Task</h2>
-        <div class="task-summary" aria-label="Task details">
-          <div class="row"><span class="label">Pays</span><strong><span id="payTaskPays">0</span></strong></div>
-          <div class="row"><span class="label">Steps left</span><strong><span id="payTaskSteps">0</span></strong></div>
-        </div>
         <div class="field">
           <label for="payStepsRange">Steps to use: <strong><span id="payStepsValue">1</span></strong></label>
           <input id="payStepsRange" type="range" min="1" max="1" value="1" step="1" />
           <div style="opacity:.8; font-size:12px">Pick between 1 and the lower of your roll or the task's remaining steps.</div>
+        </div>
+        <div class="field">
+          <div class="inline-stats">
+            <div> Pays: <strong style="color:#34d399"><span id="payStepsPays">0</span></strong></div>
+            <div> Steps to complete: <strong style="color:#f87171"><span id="payStepsToComplete">0</span></strong></div>
+          </div>
+        </div>
+        <div class="field">
+          <div>steps that will remain: <strong><span id="payStepsWillRemain">0</span></strong></div>
+        </div>
+        <div class="field">
+          <label>Owner</label>
+          <div><strong><span id="payStepsOwner">-</span></strong></div>
         </div>
         <div class="actions">
           <button id="payStepsCancel" type="button">Cancel</button>
@@ -94,20 +103,23 @@
     <div id="add-steps-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="add-steps-title" style="display:none">
       <div class="modal">
         <h2 id="add-steps-title">Add Steps to Task</h2>
-        <div class="task-summary" aria-label="Task details">
-          <div class="row"><span class="label">Pays</span><strong><span id="addTaskPays">0</span></strong></div>
-          <div class="row"><span class="label">Steps left</span><strong><span id="addTaskSteps">0</span></strong></div>
-          <div class="row"><span class="label">Owner</span>
-            <strong>
-              <span class="owner-dot" id="addTaskOwnerDot" aria-hidden="true"></span>
-              <span id="addTaskOwner">-</span>
-            </strong>
-          </div>
-        </div>
         <div class="field">
           <label for="addStepsRange">Steps to add: <strong><span id="addStepsValue">1</span></strong></label>
           <input id="addStepsRange" type="range" min="1" max="1" value="1" step="1" />
           <div style="opacity:.8; font-size:12px">Pick between 1 and the number you rolled.</div>
+        </div>
+        <div class="field">
+          <div class="inline-stats">
+            <div> Pays: <strong style="color:#34d399"><span id="addStepsPays">0</span></strong></div>
+            <div> Steps to complete: <strong style="color:#f87171"><span id="addStepsToComplete">0</span></strong></div>
+          </div>
+        </div>
+        <div class="field">
+          <div>steps that will remain: <strong><span id="addStepsWillRemain">0</span></strong></div>
+        </div>
+        <div class="field">
+          <label>Owner</label>
+          <div><strong><span id="addStepsOwner">-</span></strong></div>
         </div>
         <div class="actions">
           <button id="addStepsCancel" type="button">Cancel</button>
