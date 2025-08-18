@@ -1,4 +1,5 @@
 import './style.css';
+import DiceBox from '@3d-dice/dice-box-threejs';
 
 // Game state
 let tileCount = 20; // set via setup modal
@@ -262,20 +263,15 @@ const addStepsApply = document.getElementById('addStepsApply') as HTMLButtonElem
 const addStepsCancel = document.getElementById('addStepsCancel') as HTMLButtonElement | null;
 let addStepsTileIdx: number | null = null;
 
+// 3D dice setup
+const diceBox = new DiceBox('#dice-box', {
+  assetPath: 'https://unpkg.com/@3d-dice/dice-box-threejs@0.0.12/public/',
+  theme_material: 'plastic',
+  theme_colorset: 'white',
+});
+const diceBoxReady = diceBox.initialize();
+
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
-
-function randInt1to6(): number {
-  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
-    const arr = new Uint32Array(1);
-    crypto.getRandomValues(arr);
-    return (arr[0] % 6) + 1;
-  }
-  return Math.floor(Math.random() * 6) + 1;
-}
-
-function rollTwoDice(): [number, number] {
-  return [randInt1to6(), randInt1to6()];
-}
 
 function updateRollLabel() {
   if (rollLabel) rollLabel.textContent = `Steps left: ${remainingSteps}`;
@@ -497,20 +493,21 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
 }
 
 if (tossBtn) {
-  tossBtn.addEventListener('click', () => {
+  tossBtn.addEventListener('click', async () => {
     if (tokens.length === 0 || tossBtn.disabled) return;
     // Hide arrow and disable toss for this player until move is confirmed
-  showTossArrow(false);
-  if (rollLabel) rollLabel.textContent = '';
+    showTossArrow(false);
+    if (rollLabel) rollLabel.textContent = '';
     setTossEnabled(false);
 
-    dice = rollTwoDice();
-    updateRollLabel();
+    await diceBoxReady;
+    const results: Array<{ value: number }> = await diceBox.roll('2d6');
+    dice = [results[0].value, results[1].value];
 
     // Compute target tile for current player
-  const steps = dice[0] + dice[1];
-  const from = tokens[currentPlayer].index; // 0-based
-  beginSelection(from, steps);
+    const steps = dice[0] + dice[1];
+    const from = tokens[currentPlayer].index; // 0-based
+    beginSelection(from, steps);
   });
 }
 
@@ -597,41 +594,6 @@ function drawRoundedRect(x: number, y: number, w: number, h: number, r: number) 
   ctx.lineTo(x, y + rr);
   ctx.quadraticCurveTo(x, y, x + rr, y);
   ctx.closePath();
-}
-
-function drawDie(cx: number, cy: number, size: number, value: number) {
-  if (!ctx) return;
-  const half = size / 2;
-  const x = cx - half;
-  const y = cy - half;
-  // Body
-  drawRoundedRect(x, y, size, size, Math.max(6, size * 0.15));
-  ctx.fillStyle = '#fff';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)';
-  ctx.shadowBlur = size * 0.08;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = Math.max(1, size * 0.03);
-  ctx.stroke();
-
-  // Pips
-  const pipR = Math.max(2, size * 0.08);
-  const off = size * 0.28; // offset from center to each grid position
-  const positions: Record<number, Array<[number, number]>> = {
-    1: [[0, 0]],
-    2: [[-off, -off], [off, off]],
-    3: [[-off, -off], [0, 0], [off, off]],
-    4: [[-off, -off], [off, -off], [-off, off], [off, off]],
-    5: [[-off, -off], [off, -off], [0, 0], [-off, off], [off, off]],
-    6: [[-off, -off], [off, -off], [-off, 0], [off, 0], [-off, off], [off, off]],
-  };
-  ctx.fillStyle = '#111';
-  for (const [dx, dy] of positions[value] || []) {
-    ctx.beginPath();
-    ctx.arc(cx + dx, cy + dy, pipR, 0, Math.PI * 2);
-    ctx.fill();
-  }
 }
 
 function drawTokens(cx: number, cy: number, innerRadius: number, outerRadius: number, N: number) {
@@ -948,16 +910,6 @@ function draw() {
   // Tokens on board
   drawTokens(cx, cy, innerRadius, radius, N);
 
-  // Dice in the middle
-  const dieSize = Math.min(w, h) * 0.1;
-  const gap = dieSize * 0.2;
-  // Fade dice when awaiting a roll (button enabled), normal during the turn
-  const shouldFadeDice = !!(tossBtn && !tossBtn.disabled);
-  const prevAlpha = ctx.globalAlpha;
-  if (shouldFadeDice) ctx.globalAlpha = 0.35;
-  drawDie(cx - (dieSize / 2 + gap / 2), cy, dieSize, dice[0]);
-  drawDie(cx + (dieSize / 2 + gap / 2), cy, dieSize, dice[1]);
-  ctx.globalAlpha = prevAlpha;
 }
 
 // Handle canvas clicks to move to highlighted tile when applicable
