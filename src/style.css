@@ -1,5 +1,10 @@
 /* Base */
-:root { color-scheme: light dark; }
+:root {
+  color-scheme: light dark;
+  /* Size of the 3D dice box and its internal scale */
+  --dice-box-size: min(38vmin, 320px);
+  --dice-canvas-scale: 1;
+}
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body { margin: 0; background: #000; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; }
@@ -8,8 +13,8 @@ canvas { display: block; }
   position: fixed;
   top: 50%;
   left: 50%;
-  width: 150px;
-  height: 150px;
+  width: var(--dice-box-size);
+  height: var(--dice-box-size);
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 5;
@@ -18,6 +23,9 @@ canvas { display: block; }
   width: 100% !important;
   height: 100% !important;
   display: block;
+  /* Overall dice scale inside the box */
+  transform: scale(var(--dice-canvas-scale));
+  transform-origin: center center;
 }
 
 /* Control panel */
@@ -156,7 +164,8 @@ canvas { display: block; }
   align-items: center;
   gap: 30px; /* keep button well below the math */
   position: absolute;
-  top: 118px; /* sit the group closer to the dice */
+  /* Position this relative to the dice size */
+  top: calc(var(--dice-box-size) * 0.88);
   left: 50%;
   transform: translateX(-50%);
 }
@@ -178,4 +187,13 @@ canvas { display: block; }
 #now-playing-title #nowPlayingName {
   margin-left: 6px;
   font-weight: 700;
+}
+
+/* Responsive tweaks */
+@media (max-width: 520px) {
+  :root {
+    --dice-box-size: min(54vmin, 300px);
+    --dice-canvas-scale: 1;
+  }
+  .roll-group { top: calc(var(--dice-box-size) * 0.92); }
 }
