@@ -24,6 +24,10 @@ let tokens: Token[] = [];
 let balances: number[] = []; // money per player
 let targetAmountToWin = 100;
 
+const TASK_ICON = '⚡';
+const TASK_FILL_COLORS = ['rgba(255,107,107,0.28)', 'rgba(255,169,77,0.28)', 'rgba(255,212,59,0.28)'];
+const TASK_ICON_COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b'];
+
 // Movement animation state
 type MoveAnim = {
   player: number;
@@ -328,7 +332,7 @@ diceBoxReady.then(() => {
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
 
 function updateRollLabel() {
-  if (rollLabel) rollLabel.textContent = `Steps left: ${remainingSteps}`;
+  if (rollLabel) rollLabel.textContent = `👣 ${remainingSteps}`;
 }
 
 function updateTurnDot() {
@@ -346,7 +350,7 @@ function renderBalances() {
     dot.className = 'dot';
     dot.style.background = tokens[i].color;
     const text = document.createElement('span');
-    text.textContent = `$${balances[i] ?? 0}`;
+    text.textContent = `💰${balances[i] ?? 0}`;
     pill.appendChild(dot);
     pill.appendChild(text);
     balancesRow.appendChild(pill);
@@ -716,8 +720,11 @@ function drawTokens(
       ctx.shadowBlur = tokenR * 0.6;
       ctx.fill();
       ctx.shadowBlur = 0;
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+      ctx.stroke();
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)';
       ctx.stroke();
     }
   }
@@ -751,8 +758,11 @@ function drawTokens(
     ctx.shadowBlur = tokenR * 0.6;
     ctx.fill();
     ctx.shadowBlur = 0;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.stroke();
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
     ctx.stroke();
   }
 }
@@ -773,13 +783,13 @@ function drawHighlight(
   const a0 = tileIdx * step;
   const a1 = (tileIdx + 1) * step;
   ctx.save();
-  // Filled stroke for segment
   ctx.beginPath();
   ctx.ellipse(cx, cy, aMid, bMid, 0, a0, a1);
   ctx.strokeStyle = fill;
   ctx.lineWidth = trackWidth;
   ctx.lineCap = 'butt';
-  // Soft outer glow to separate from tiles without a midline
+  const pulse = 0.6 + 0.4 * Math.sin(performance.now() / 300);
+  ctx.globalAlpha = pulse;
   ctx.shadowColor = stroke;
   ctx.shadowBlur = 10;
   ctx.stroke();
@@ -806,10 +816,9 @@ function draw() {
   // Board parameters (ellipse with constant visual thickness via stroke)
   const cx = w / 2;
   const cy = h / 2;
-  const baseR = Math.min(w, h) * 0.36; // base scale
-  // Stretch horizontally to make more room near dice; keep vertical clearance similar to circular track
-  const aMid = Math.min(baseR * 1.6, w * 0.46);
-  const bMid = Math.min(baseR * 1.05, h * 0.46);
+  const radius = Math.min(w, h) * 0.4;
+  const aMid = radius;
+  const bMid = radius;
   // Track width in pixels (constant around ellipse)
   const trackWidth = Math.max(28, Math.min(Math.min(w, h) * 0.13, 120));
 
@@ -845,12 +854,13 @@ function draw() {
     ctx.stroke();
     ctx.restore();
 
-    // Task background overlay (light red) by overdrawing same segment with alpha
+    // Task background overlay using varied colors
     if (taskTiles.has(i)) {
       ctx.save();
       ctx.beginPath();
       ctx.ellipse(cx, cy, aMid, bMid, 0, a0, a1);
-      ctx.strokeStyle = 'rgba(255, 99, 99, 0.28)';
+      const cidx = i % TASK_FILL_COLORS.length;
+      ctx.strokeStyle = TASK_FILL_COLORS[cidx];
       ctx.lineWidth = trackWidth;
       ctx.lineCap = 'butt';
       ctx.stroke();
@@ -885,20 +895,21 @@ function draw() {
     const mid = (a0 + a1) / 2;
     const aLabel = aMid; // centerline label position
     const bLabel = bMid;
-    ctx.fillStyle = '#bbb';
-    ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+    ctx.fillStyle = '#eee';
+    ctx.font = '14px system-ui, -apple-system, Segoe UI, Roboto, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.save();
     ctx.translate(cx + Math.cos(mid) * aLabel, cy + Math.sin(mid) * bLabel);
     // Keep upright for readability on ellipse
     ctx.fillText(String(i + 1), 0, 0);
-    // Add TASK label beneath number when applicable
+    // Add TASK icon beneath number when applicable
     if (taskTiles.has(i)) {
-      ctx.fillStyle = 'rgba(255,160,160,0.95)';
-      ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, Arial';
-      ctx.translate(0, 12);
-      ctx.fillText('TASK', 0, 0);
+      const cidx = i % TASK_ICON_COLORS.length;
+      ctx.fillStyle = TASK_ICON_COLORS[cidx];
+      ctx.font = '16px system-ui, emoji';
+      ctx.translate(0, 14);
+      ctx.fillText(TASK_ICON, 0, 0);
     }
     ctx.restore();
 
@@ -997,6 +1008,20 @@ function draw() {
     }
   }
 
+  // Dotted trail showing potential movement path
+  if (selectableTiles.size > 0 && segmentFromIdx != null && remainingSteps > 0) {
+    for (let d = 1; d <= remainingSteps; d++) {
+      const idx = normIdx(segmentFromIdx + d, N);
+      const ang = (idx + 0.5) * step;
+      const px = cx + Math.cos(ang) * aMid;
+      const py = cy + Math.sin(ang) * bMid;
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,215,0,0.6)';
+      ctx.fill();
+    }
+  }
+
   // Tokens on board
   drawTokens(cx, cy, aMid, bMid, trackWidth, N);
 
@@ -1017,9 +1042,9 @@ canvas.addEventListener('click', (ev) => {
   const cx = w / 2;
   const cy = h / 2;
   // Match ellipse params from draw() (center ellipse + constant width)
-  const baseR = Math.min(w, h) * 0.36;
-  const aMid = Math.min(baseR * 1.6, w * 0.46);
-  const bMid = Math.min(baseR * 1.05, h * 0.46);
+  const radius = Math.min(w, h) * 0.4;
+  const aMid = radius;
+  const bMid = radius;
   const trackWidth = Math.max(28, Math.min(Math.min(w, h) * 0.13, 120));
 
   // Check if point is in the constant-width ring using signed distance to ellipse

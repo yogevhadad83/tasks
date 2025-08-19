@@ -11,12 +11,24 @@ body { margin: 0; background: #000; font-family: system-ui, -apple-system, Segoe
 canvas { display: block; }
 #dice-box {
   position: fixed;
-  top: 50%;
+  top: 60%;
   left: 50%;
   width: var(--dice-box-size);
   height: var(--dice-box-size);
   transform: translate(-50%, -50%);
   pointer-events: none;
+  z-index: 6;
+}
+#dice-tray {
+  position: fixed;
+  top: 60%;
+  left: 50%;
+  width: calc(var(--dice-box-size) * 1.2);
+  height: calc(var(--dice-box-size) * 1.2);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 25px rgba(0,0,0,0.6);
   z-index: 5;
 }
 #dice-box canvas {
@@ -28,11 +40,9 @@ canvas { display: block; }
   transform-origin: center center;
 }
 
-/* Control panel */
-#control-panel {
+/* HUD panels */
+.hud-panel {
   position: fixed;
-  top: 12px;
-  left: 12px;
   background: rgba(20, 20, 20, 0.75);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -43,25 +53,22 @@ canvas { display: block; }
   align-items: center;
   backdrop-filter: blur(4px);
 }
-#control-panel .row { display: flex; gap: 12px; align-items: center; }
-#control-panel .status-row { font-size: 13px; }
-#control-panel .status-row #rollLabel { font-weight: 700; opacity: 0.95; }
-#control-panel .roll-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-#control-panel button { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: #1f6feb; color: white; cursor: pointer; }
-#control-panel button[disabled] { opacity: 0.6; cursor: not-allowed; }
-#control-panel button:hover { filter: brightness(1.1); }
-#control-panel #rollLabel { min-width: 64px; text-align: center; opacity: 0.9; }
-#control-panel .now-playing { font-size: 12px; opacity: 0.9; }
-#control-panel .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.6); }
-#control-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
+#status-panel { top: 12px; left: 12px; }
+#balances-panel { top: 12px; right: 12px; }
 
-/* Visual separators and dot inside control panel */
-#control-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
-#control-panel #turnDot { width: 12px; height: 12px; border: 1px solid rgba(255,255,255,0.7); border-radius: 50%; }
+.hud-panel .row { display: flex; gap: 12px; align-items: center; }
+.hud-panel .status-row { font-size: 13px; }
+.hud-panel .status-row #rollLabel { font-weight: 700; opacity: 0.95; }
+.hud-panel .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.6); }
+.hud-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
+
+/* Visual separators and dot inside panels */
+.hud-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
+.hud-panel #turnDot { width: 12px; height: 12px; border: 1px solid rgba(255,255,255,0.7); border-radius: 50%; }
 .status-label { opacity: 0.85; font-weight: 600; }
 
 /* Balances */
-#control-panel .balances-row { margin-top: 6px; gap: 8px; flex-wrap: wrap; }
+.hud-panel .balances-row { gap: 8px; flex-wrap: wrap; }
 .balance-pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #fff; font-size: 12px; }
 .balance-pill .dot { width: 10px; height: 10px; border: 1px solid rgba(255,255,255,0.7); }
 
@@ -118,9 +125,9 @@ canvas { display: block; }
 /* Game container */
 #game-container {
   position: fixed;
-  top: 50%;
+  bottom: 32px;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -137,12 +144,7 @@ canvas { display: block; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px; /* keep a little space above the button */
-  position: absolute;
-  /* Position this relative to the dice size */
-  top: calc(var(--dice-box-size) * 0.82);
-  left: 50%;
-  transform: translateX(-50%);
+  gap: 8px;
 }
 
 /* Blue button style */
@@ -170,5 +172,4 @@ canvas { display: block; }
     --dice-box-size: min(54vmin, 300px);
     --dice-canvas-scale: 1;
   }
-  .roll-group { top: calc(var(--dice-box-size) * 0.92); }
 }
