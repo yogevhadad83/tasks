@@ -779,12 +779,9 @@ function drawHighlight(
   ctx.strokeStyle = fill;
   ctx.lineWidth = trackWidth;
   ctx.lineCap = 'butt';
-  ctx.stroke();
-  // Thin border line along the same arc for subtle edge accent
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, aMid, bMid, 0, a0, a1);
-  ctx.strokeStyle = stroke;
-  ctx.lineWidth = 2;
+  // Soft outer glow to separate from tiles without a midline
+  ctx.shadowColor = stroke;
+  ctx.shadowBlur = 10;
   ctx.stroke();
   ctx.restore();
 }

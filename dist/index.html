@@ -4,23 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Game Demo</title>
-    <script type="module" crossorigin src="/assets/index-DnSQhmFb.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Bk880z6i.css">
+    <script type="module" crossorigin src="/assets/index-CSqK4PGM.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-1UrQ3yWy.css">
   </head>
   <body>
     <div id="game-container">
-      <h2 id="now-playing-title">
-        <span class="np-text">Now Playing</span>
-        <span id="turnDot" class="dot current-player-dot" title="Current player"></span>
-      </h2>
       <div class="roll-group">
-        <span id="rollLabel" aria-live="polite" title="Last roll"></span>
         <button id="tossBtn" type="button">Roll</button>
       </div>
     </div>
     <div id="dice-box"></div>
     <div id="control-panel" role="region" aria-label="Game controls">
-      <div class="row">
+      <div class="row status-row">
+        <span class="status-label">Now Playing</span>
+        <span id="turnDot" class="dot" title="Current player"></span>
+        <span class="sep" aria-hidden="true"></span>
+        <span id="rollLabel" aria-live="polite" title="Steps remaining"></span>
       </div>
       <div class="row balances-row" id="balances" aria-label="Player balances"></div>
     </div>

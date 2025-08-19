@@ -44,6 +44,8 @@ canvas { display: block; }
   backdrop-filter: blur(4px);
 }
 #control-panel .row { display: flex; gap: 12px; align-items: center; }
+#control-panel .status-row { font-size: 13px; }
+#control-panel .status-row #rollLabel { font-weight: 700; opacity: 0.95; }
 #control-panel .roll-group { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #control-panel button { padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: #1f6feb; color: white; cursor: pointer; }
 #control-panel button[disabled] { opacity: 0.6; cursor: not-allowed; }
@@ -53,10 +55,10 @@ canvas { display: block; }
 #control-panel .dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,0.6); }
 #control-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
 
-/* Hide redundant elements */
-#control-panel .now-playing, #control-panel .sep, #control-panel #turnDot {
-  display: none;
-}
+/* Visual separators and dot inside control panel */
+#control-panel .sep { width: 1px; height: 18px; background: rgba(255,255,255,0.2); margin: 0 6px; display: inline-block; }
+#control-panel #turnDot { width: 12px; height: 12px; border: 1px solid rgba(255,255,255,0.7); border-radius: 50%; }
+.status-label { opacity: 0.85; font-weight: 600; }
 
 /* Balances */
 #control-panel .balances-row { margin-top: 6px; gap: 8px; flex-wrap: wrap; }
@@ -127,45 +129,18 @@ canvas { display: block; }
   text-align: center;
 }
 
-#now-playing-title {
-  font-size: 28px;
-  font-weight: 800;
-  margin: 0;
-  position: absolute;
-  top: -220px; /* Adjust as needed */
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-#now-playing-title .np-text { line-height: 1; }
-#now-playing-title .current-player-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.9);
-}
-
 /* Roll result (math) shown between dice and the roll button */
-#rollLabel {
-  min-width: 64px;
-  text-align: center;
-  opacity: 0.98;
-  font-size: 20px;
-  font-weight: 800;
-  margin-top: -26px; /* pull it very close to the dice */
-}
+/* rollLabel now lives in control-panel status row; shrink for header */
+#rollLabel { font-size: 14px; margin: 0; min-width: 0; }
 
 .roll-group {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 30px; /* keep button well below the math */
+  gap: 16px; /* keep a little space above the button */
   position: absolute;
   /* Position this relative to the dice size */
-  top: calc(var(--dice-box-size) * 0.88);
+  top: calc(var(--dice-box-size) * 0.82);
   left: 50%;
   transform: translateX(-50%);
 }
