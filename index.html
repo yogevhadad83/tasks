@@ -7,20 +7,23 @@
     <link rel="stylesheet" href="/src/style.css">
   </head>
   <body>
+    <div id="dice-tray"></div>
+    <div id="dice-box"></div>
     <div id="game-container">
       <div class="roll-group">
         <button id="tossBtn" type="button">Roll</button>
       </div>
     </div>
-    <div id="dice-box"></div>
-    <div id="control-panel" role="region" aria-label="Game controls">
+    <div id="status-panel" class="hud-panel" role="region" aria-label="Turn info">
       <div class="row status-row">
         <span class="status-label">Now Playing</span>
         <span id="turnDot" class="dot" title="Current player"></span>
         <span class="sep" aria-hidden="true"></span>
         <span id="rollLabel" aria-live="polite" title="Steps remaining"></span>
       </div>
-      <div class="row balances-row" id="balances" aria-label="Player balances"></div>
+    </div>
+    <div id="balances-panel" class="hud-panel" role="region" aria-label="Player balances">
+      <div class="row balances-row" id="balances"></div>
     </div>
 
     <!-- Setup Modal -->
