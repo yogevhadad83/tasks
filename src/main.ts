@@ -1,4 +1,5 @@
 import './style.css';
+import DiceBox from '@3d-dice/dice-box-threejs';
 
 // Game state
 let tileCount = 20; // set via setup modal
@@ -262,20 +263,69 @@ const addStepsApply = document.getElementById('addStepsApply') as HTMLButtonElem
 const addStepsCancel = document.getElementById('addStepsCancel') as HTMLButtonElement | null;
 let addStepsTileIdx: number | null = null;
 
-function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
+// 3D dice setup
+const diceBox = new DiceBox('#dice-box', {
+  assetPath: 'https://unpkg.com/@3d-dice/dice-box-threejs@0.0.12/public/',
+  theme_material: 'plastic',
+  theme_colorset: 'white',
+});
+const diceBoxReady = diceBox.initialize();
+(diceBox as any).startClickThrow = function (notation: string) {
+  // Spawn dice near the center of the box with slight separation and outward velocity
+  const vector = { x: 0, y: 0 };
+  const dist = 100;
+  const boost = (Math.random() + 3) * dist * this.strength;
+  const nv = this.getNotationVectors(notation, vector, boost, dist);
 
-function randInt1to6(): number {
-  if (typeof crypto !== 'undefined' && 'getRandomValues' in crypto) {
-    const arr = new Uint32Array(1);
-    crypto.getRandomValues(arr);
-    return (arr[0] % 6) + 1;
+  const w = this.display?.containerWidth ?? 300;
+  const h = this.display?.containerHeight ?? 300;
+  const sep = Math.max(24, Math.floor(Math.min(w, h) * 0.12));
+  const offsets = [-Math.floor(sep / 2), Math.floor(sep / 2)];
+
+  nv.vectors.forEach((v: any, idx: number) => {
+    // Centered positions with a little lateral spacing to avoid instant collisions
+    v.pos.x = offsets[idx % offsets.length] || 0;
+    v.pos.y = 0;
+    v.pos.z = 220 + Math.random() * 160; // slightly above the floor
+
+    // Give a gentle, random outward push so they spread out and bounce off the walls
+    const ang = Math.random() * Math.PI * 2;
+    const speed = Math.max(400, Math.min(w, h) * 2.4);
+    v.velocity.x = Math.cos(ang) * speed * 0.35;
+    v.velocity.y = Math.sin(ang) * speed * 0.35;
+    v.velocity.z = -10;
+  });
+
+  return nv;
+};
+
+// After initialization, pull the invisible walls slightly inward so dice stay well inside the box
+diceBoxReady.then(() => {
+  const box: any = diceBox as any;
+  const w = box.display?.containerWidth ?? 300;
+  const h = box.display?.containerHeight ?? 300;
+  const factor = 0.82; // tighter than library default (~0.93)
+  if (box.box_body?.topWall && box.box_body?.bottomWall && box.box_body?.leftWall && box.box_body?.rightWall) {
+    box.box_body.topWall.position.set(0, h * factor, 0);
+    box.box_body.bottomWall.position.set(0, -h * factor, 0);
+    box.box_body.leftWall.position.set(w * factor, 0, 0);
+    box.box_body.rightWall.position.set(-w * factor, 0, 0);
   }
-  return Math.floor(Math.random() * 6) + 1;
-}
 
-function rollTwoDice(): [number, number] {
-  return [randInt1to6(), randInt1to6()];
-}
+  const reapplyWalls = () => {
+    const w2 = box.display?.containerWidth ?? 300;
+    const h2 = box.display?.containerHeight ?? 300;
+    if (box.box_body?.topWall && box.box_body?.bottomWall && box.box_body?.leftWall && box.box_body?.rightWall) {
+      box.box_body.topWall.position.set(0, h2 * factor, 0);
+      box.box_body.bottomWall.position.set(0, -h2 * factor, 0);
+      box.box_body.leftWall.position.set(w2 * factor, 0, 0);
+      box.box_body.rightWall.position.set(-w2 * factor, 0, 0);
+    }
+  };
+  window.addEventListener('resize', reapplyWalls);
+});
+
+function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
 
 function updateRollLabel() {
   if (rollLabel) rollLabel.textContent = `Steps left: ${remainingSteps}`;
@@ -497,20 +547,24 @@ function openPayOrSabotageModalAt(tileIdx: number, budgetSteps: number, after?: 
 }
 
 if (tossBtn) {
-  tossBtn.addEventListener('click', () => {
+  tossBtn.addEventListener('click', async () => {
     if (tokens.length === 0 || tossBtn.disabled) return;
     // Hide arrow and disable toss for this player until move is confirmed
-  showTossArrow(false);
-  if (rollLabel) rollLabel.textContent = '';
+    showTossArrow(false);
+    if (rollLabel) rollLabel.textContent = '';
     setTossEnabled(false);
 
-    dice = rollTwoDice();
-    updateRollLabel();
+    await diceBoxReady;
+  const rollResult: any = await diceBox.roll('2d6');
+    const values = rollResult.sets.flatMap((s: any) => s.rolls.map((r: any) => r.value));
+    dice = [values[0] ?? 1, values[1] ?? 1];
+
+  // Positions and walls are handled in our custom startClickThrow and post-init tweak above
 
     // Compute target tile for current player
-  const steps = dice[0] + dice[1];
-  const from = tokens[currentPlayer].index; // 0-based
-  beginSelection(from, steps);
+    const steps = values.reduce((a: number, b: number) => a + b, 0);
+    const from = tokens[currentPlayer].index; // 0-based
+    beginSelection(from, steps);
   });
 }
 
@@ -599,44 +653,19 @@ function drawRoundedRect(x: number, y: number, w: number, h: number, r: number) 
   ctx.closePath();
 }
 
-function drawDie(cx: number, cy: number, size: number, value: number) {
+function drawTokens(
+  cx: number,
+  cy: number,
+  aInner: number,
+  bInner: number,
+  aOuter: number,
+  bOuter: number,
+  N: number
+) {
   if (!ctx) return;
-  const half = size / 2;
-  const x = cx - half;
-  const y = cy - half;
-  // Body
-  drawRoundedRect(x, y, size, size, Math.max(6, size * 0.15));
-  ctx.fillStyle = '#fff';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)';
-  ctx.shadowBlur = size * 0.08;
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = Math.max(1, size * 0.03);
-  ctx.stroke();
-
-  // Pips
-  const pipR = Math.max(2, size * 0.08);
-  const off = size * 0.28; // offset from center to each grid position
-  const positions: Record<number, Array<[number, number]>> = {
-    1: [[0, 0]],
-    2: [[-off, -off], [off, off]],
-    3: [[-off, -off], [0, 0], [off, off]],
-    4: [[-off, -off], [off, -off], [-off, off], [off, off]],
-    5: [[-off, -off], [off, -off], [0, 0], [-off, off], [off, off]],
-    6: [[-off, -off], [off, -off], [-off, 0], [off, 0], [-off, off], [off, off]],
-  };
-  ctx.fillStyle = '#111';
-  for (const [dx, dy] of positions[value] || []) {
-    ctx.beginPath();
-    ctx.arc(cx + dx, cy + dy, pipR, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function drawTokens(cx: number, cy: number, innerRadius: number, outerRadius: number, N: number) {
-  if (!ctx) return;
-  const thickness = outerRadius - innerRadius;
+  const thicknessX = aOuter - aInner;
+  const thicknessY = bOuter - bInner;
+  const thickness = Math.hypot(thicknessX, thicknessY) * 0.5;
   const tokenR = Math.max(4, Math.min(thickness * 0.28, Math.min(window.innerWidth, window.innerHeight) * 0.02));
   const groupByTile = new Map<number, Token[]>();
   // If animating, skip grouping the moving token; will draw it separately at fractional position
@@ -651,14 +680,16 @@ function drawTokens(cx: number, cy: number, innerRadius: number, outerRadius: nu
   }
 
   const step = (Math.PI * 2) / N;
-  const midR = innerRadius + thickness * 0.62; // place slightly closer to outer edge
+  // Mid ellipse radii where tokens sit
+  const aMid = aInner + (aOuter - aInner) * 0.62;
+  const bMid = bInner + (bOuter - bInner) * 0.62;
 
   for (const [tileIdx, arr] of groupByTile) {
     const a0 = tileIdx * step;
     const a1 = (tileIdx + 1) * step;
     const am = (a0 + a1) / 2;
-    const baseX = cx + Math.cos(am) * midR;
-    const baseY = cy + Math.sin(am) * midR;
+    const baseX = cx + Math.cos(am) * aMid;
+    const baseY = cy + Math.sin(am) * bMid;
 
     // Arrange tokens in a small circle around the tile center point
     const ringR = tokenR * (arr.length > 1 ? 2.2 : 0);
@@ -701,8 +732,8 @@ function drawTokens(cx: number, cy: number, innerRadius: number, outerRadius: nu
     const p = easeInOutCubic(pNow);
     const fracIndex = (moveAnim.from + p * moveAnim.steps) % N;
     const angle = (fracIndex + 0.5) * step; // center of (possibly fractional) tile
-    const px = cx + Math.cos(angle) * midR;
-    const py = cy + Math.sin(angle) * midR;
+  const px = cx + Math.cos(angle) * aMid;
+  const py = cy + Math.sin(angle) * bMid;
     const token = tokens[moveAnim.player];
 
     // Subtle motion trail glow
@@ -733,8 +764,10 @@ function drawTokens(cx: number, cy: number, innerRadius: number, outerRadius: nu
 function drawHighlight(
   cx: number,
   cy: number,
-  innerRadius: number,
-  outerRadius: number,
+  aInner: number,
+  bInner: number,
+  aOuter: number,
+  bOuter: number,
   N: number,
   tileIdx: number | null,
   fill: string = 'rgba(255, 215, 0, 0.22)',
@@ -746,11 +779,15 @@ function drawHighlight(
   const a1 = (tileIdx + 1) * step;
   ctx.save();
   ctx.beginPath();
-  ctx.moveTo(cx + Math.cos(a0) * innerRadius, cy + Math.sin(a0) * innerRadius);
-  ctx.lineTo(cx + Math.cos(a0) * outerRadius, cy + Math.sin(a0) * outerRadius);
-  ctx.arc(cx, cy, outerRadius, a0, a1);
-  ctx.lineTo(cx + Math.cos(a1) * innerRadius, cy + Math.sin(a1) * innerRadius);
-  ctx.arc(cx, cy, innerRadius, a1, a0, true);
+  // From inner ellipse at a0 to outer ellipse at a0
+  ctx.moveTo(cx + Math.cos(a0) * aInner, cy + Math.sin(a0) * bInner);
+  ctx.lineTo(cx + Math.cos(a0) * aOuter, cy + Math.sin(a0) * bOuter);
+  // Trace outer ellipse segment
+  ctx.ellipse(cx, cy, aOuter, bOuter, 0, a0, a1, false);
+  // Back to inner ellipse
+  ctx.lineTo(cx + Math.cos(a1) * aInner, cy + Math.sin(a1) * bInner);
+  // Trace inner ellipse segment backwards
+  ctx.ellipse(cx, cy, aInner, bInner, 0, a1, a0, true);
   ctx.closePath();
   ctx.fillStyle = fill; // customizable glow
   ctx.fill();
@@ -777,21 +814,25 @@ function draw() {
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, w, h);
 
-  // Board parameters
+  // Board parameters (ellipse)
   const cx = w / 2;
   const cy = h / 2;
-  const radius = Math.min(w, h) * 0.38; // leave margin for UI
-  const innerRadius = radius * 0.78;     // thickness of the track
+  const baseR = Math.min(w, h) * 0.36; // base scale
+  // Stretch horizontally to make more room near dice; keep vertical clearance similar to circular track
+  const aOuter = Math.min(baseR * 1.6, w * 0.46);
+  const bOuter = Math.min(baseR * 1.05, h * 0.46);
+  const aInner = aOuter * 0.78; // track thickness factor
+  const bInner = bOuter * 0.78;
 
   // Draw circular path as segmented ring of tiles
   const N = Math.max(3, Math.floor(tileCount));
   const twoPi = Math.PI * 2;
   const step = twoPi / N;
 
-  // Base ring background (subtle)
+  // Base elliptical ring background (subtle)
   ctx.beginPath();
-  ctx.arc(cx, cy, radius, 0, twoPi);
-  ctx.arc(cx, cy, innerRadius, twoPi, 0, true);
+  ctx.ellipse(cx, cy, aOuter, bOuter, 0, 0, twoPi);
+  ctx.ellipse(cx, cy, aInner, bInner, 0, twoPi, 0, true);
   ctx.closePath();
   ctx.fillStyle = '#111';
   ctx.fill();
@@ -801,13 +842,13 @@ function draw() {
     const a0 = i * step;
     const a1 = (i + 1) * step;
 
-    // Create a tile segment (wedge between two radii, with inner and outer arcs)
+    // Create a tile segment (elliptical wedge between inner and outer arcs)
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(a0) * innerRadius, cy + Math.sin(a0) * innerRadius);
-    ctx.lineTo(cx + Math.cos(a0) * radius,      cy + Math.sin(a0) * radius);
-    ctx.arc(cx, cy, radius, a0, a1);
-    ctx.lineTo(cx + Math.cos(a1) * innerRadius, cy + Math.sin(a1) * innerRadius);
-    ctx.arc(cx, cy, innerRadius, a1, a0, true);
+    ctx.moveTo(cx + Math.cos(a0) * aInner, cy + Math.sin(a0) * bInner);
+    ctx.lineTo(cx + Math.cos(a0) * aOuter, cy + Math.sin(a0) * bOuter);
+    ctx.ellipse(cx, cy, aOuter, bOuter, 0, a0, a1);
+    ctx.lineTo(cx + Math.cos(a1) * aInner, cy + Math.sin(a1) * bInner);
+    ctx.ellipse(cx, cy, aInner, bInner, 0, a1, a0, true);
     ctx.closePath();
 
     // Alternate colors for readability; overlay task highlight if needed
@@ -832,14 +873,15 @@ function draw() {
 
     // Optional index marker
     const mid = (a0 + a1) / 2;
-    const labelR = (innerRadius + radius) / 2;
+    const aLabel = (aInner + aOuter) / 2;
+    const bLabel = (bInner + bOuter) / 2;
     ctx.fillStyle = '#bbb';
     ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.save();
-    ctx.translate(cx + Math.cos(mid) * labelR, cy + Math.sin(mid) * labelR);
-    ctx.rotate(mid + Math.PI / 2);
+    ctx.translate(cx + Math.cos(mid) * aLabel, cy + Math.sin(mid) * bLabel);
+    // Keep upright for readability on ellipse
     ctx.fillText(String(i + 1), 0, 0);
     // Add TASK label beneath number when applicable
     if (taskTiles.has(i)) {
@@ -855,9 +897,10 @@ function draw() {
       const info = taskInfo.get(i);
       if (info) {
         const mid = (a0 + a1) / 2;
-        const outR = radius + 24; // push a bit further out from the ring
-        const tx = cx + Math.cos(mid) * outR;
-        const ty = cy + Math.sin(mid) * outR;
+        const aOut = aOuter + 24; // approximate outward offset along parameter direction
+        const bOut = bOuter + 24;
+        const tx = cx + Math.cos(mid) * aOut;
+        const ty = cy + Math.sin(mid) * bOut;
         const paysText = `P: ${info.pays}`;
         const stepsText = `S: ${info.steps}`;
 
@@ -924,14 +967,14 @@ function draw() {
     if (onOwnedTask) {
       // Blue highlight for current tile
       drawHighlight(
-        cx, cy, innerRadius, radius, N, fromIdx,
+  cx, cy, aInner, bInner, aOuter, bOuter, N, fromIdx,
         'rgba(59, 130, 246, 0.22)', // blue fill
         'rgba(59, 130, 246, 0.6)'
       );
     } else if (owner != null && owner !== currentPlayer) {
       // Different color highlight (purple) when you can add steps to someone else's task
       drawHighlight(
-        cx, cy, innerRadius, radius, N, fromIdx,
+  cx, cy, aInner, bInner, aOuter, bOuter, N, fromIdx,
         'rgba(168, 85, 247, 0.22)', // purple fill
         'rgba(168, 85, 247, 0.6)'
       );
@@ -941,23 +984,13 @@ function draw() {
   // Highlight selectable tiles (after toss) in gold
   if (selectableTiles.size > 0) {
     for (const ti of selectableTiles) {
-      drawHighlight(cx, cy, innerRadius, radius, N, ti);
+    drawHighlight(cx, cy, aInner, bInner, aOuter, bOuter, N, ti);
     }
   }
 
   // Tokens on board
-  drawTokens(cx, cy, innerRadius, radius, N);
+  drawTokens(cx, cy, aInner, bInner, aOuter, bOuter, N);
 
-  // Dice in the middle
-  const dieSize = Math.min(w, h) * 0.1;
-  const gap = dieSize * 0.2;
-  // Fade dice when awaiting a roll (button enabled), normal during the turn
-  const shouldFadeDice = !!(tossBtn && !tossBtn.disabled);
-  const prevAlpha = ctx.globalAlpha;
-  if (shouldFadeDice) ctx.globalAlpha = 0.35;
-  drawDie(cx - (dieSize / 2 + gap / 2), cy, dieSize, dice[0]);
-  drawDie(cx + (dieSize / 2 + gap / 2), cy, dieSize, dice[1]);
-  ctx.globalAlpha = prevAlpha;
 }
 
 // Handle canvas clicks to move to highlighted tile when applicable
@@ -974,16 +1007,22 @@ canvas.addEventListener('click', (ev) => {
   const h = canvas.clientHeight;
   const cx = w / 2;
   const cy = h / 2;
-  const radius = Math.min(w, h) * 0.38;
-  const innerRadius = radius * 0.78;
+  // Match ellipse params from draw()
+  const baseR = Math.min(w, h) * 0.36;
+  const aOuter = Math.min(baseR * 1.6, w * 0.46);
+  const bOuter = Math.min(baseR * 1.05, h * 0.46);
+  const aInner = aOuter * 0.78;
+  const bInner = bOuter * 0.78;
 
-  // Check if point is in the highlighted wedge
+  // Check if point is in the elliptical ring
   const dx = x - cx;
   const dy = y - cy;
-  const r = Math.hypot(dx, dy);
-  if (r < innerRadius || r > radius) return; // not in ring
+  const sOuter = (dx * dx) / (aOuter * aOuter) + (dy * dy) / (bOuter * bOuter);
+  const sInner = (dx * dx) / (aInner * aInner) + (dy * dy) / (bInner * bInner);
+  if (!(sOuter <= 1 && sInner >= 1)) return; // not within elliptical ring
 
-  let ang = Math.atan2(dy, dx);
+  // Parameter angle on ellipse
+  let ang = Math.atan2(dy / bOuter, dx / aOuter);
   if (ang < 0) ang += Math.PI * 2;
 
   const N = tileCount;

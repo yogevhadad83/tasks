@@ -1,1 +1,1 @@
-{"root":["./src/main.ts"],"version":"5.9.2"}
+{"root":["./src/dice-box-threejs.d.ts","./src/dice3d.ts","./src/main.ts","./src/types/dice-box-threejs.d.ts"],"version":"5.9.2"}
