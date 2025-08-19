@@ -270,6 +270,12 @@ const diceBox = new DiceBox('#dice-box', {
   theme_colorset: 'white',
 });
 const diceBoxReady = diceBox.initialize();
+(diceBox as any).startClickThrow = function (notation: string) {
+  const vector = { x: 0, y: 0 };
+  const dist = Math.sqrt(vector.x * vector.x + vector.y * vector.y) + 100;
+  const boost = (Math.random() + 3) * dist * this.strength;
+  return this.getNotationVectors(notation, vector, boost, dist);
+};
 
 function clamp(n: number, min: number, max: number) { return Math.max(min, Math.min(max, n)); }
 
@@ -501,11 +507,25 @@ if (tossBtn) {
     setTossEnabled(false);
 
     await diceBoxReady;
-    const results: Array<{ value: number }> = await diceBox.roll('2d6');
-    dice = [results[0].value, results[1].value];
+    const rollResult: any = await diceBox.roll('2d6');
+    const values = rollResult.sets.flatMap((s: any) => s.rolls.map((r: any) => r.value));
+    dice = [values[0] ?? 1, values[1] ?? 1];
+
+    const spacing = 20;
+    (diceBox as any).diceList?.forEach((die: any, idx: number) => {
+      const x = (idx === 0 ? -1 : 1) * spacing * 0.5;
+      if (die.body) {
+        die.body.position.x = x;
+        die.body.position.y = 0;
+        die.body.velocity.set(0, 0, 0);
+        die.body.angularVelocity.set(0, 0, 0);
+      }
+      die.position.x = x;
+      die.position.y = 0;
+    });
 
     // Compute target tile for current player
-    const steps = dice[0] + dice[1];
+    const steps = values.reduce((a: number, b: number) => a + b, 0);
     const from = tokens[currentPlayer].index; // 0-based
     beginSelection(from, steps);
   });
